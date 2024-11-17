@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const PORT = 3000;
 
+
 let cars = [
   { id: 1, make: "Toyota", model: "Corolla", year: 2020 },
   { id: 2, make: "Honda", model: "Civic", year: 2022 },
@@ -25,6 +26,11 @@ app.put("/api", (req, res) => {
   res.status(404).send("Hello from another world");
 });
 
+app.get("/cars", (req, res) => {
+  res.json(cars);
+});
+
 app.get("/cars/:id", (req, res) => {
-  res.status(200).json(cars);
+  const id = req.params.id;
+  res.json(cars[id-1]);
 });

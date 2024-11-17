@@ -2,13 +2,6 @@
 
 ## Session 01
 
-### Workshop Objectives
-By the end of this workshop, participants will:
-- Understand the fundamental concepts of backend development.
-- Set up a local development environment and start a Node.js server.
-- Learn to build a RESTful API using Express.js.
-- Be able to handle common HTTP status codes.
-- Gain experience with API testing tools like Postman and Thunder Client.
 
 ### Topics Covered:
 1. **Introduction to Web Development**
@@ -338,4 +331,384 @@ app.get("/cars", (req, res) => {
 });
 ```
 
-<!-- - **Role of Backend Developers**: Backend developers are responsible for server-side logic, handling requests, data processing, and ensuring the application runs smoothly behind the scenes. -->
+## Session 02
+
+### Topics Covered:
+1. **Recap of Key Concepts from Session 01**
+2. **Key Terms and Definitions (URL Structure)**
+3. **Middleware** 'task'
+4. **Params vs. Query Strings**  'task'
+5. **CRUD opration** 'task'
+
+## 1. **Recap of Key Concepts from Session 01**
+**fromat of the request:**
+```
+POST https://example.com/api/v1/users
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0
+content-type: application/json
+accept: application/json
+{ 
+  "name": "Juan",
+  "password": "123456"
+}
+```
+**fromat of the response:**
+```
+HTTP 201 Created
+content-type: application/json
+Content-Length: 100
+{
+"msg": "User createdsuccessfully"
+}
+```
+**Task 1**:
+
+Create an API endpoint that logs (print) request details including IP address, User-Agent, HTTP method, URL path, and Accept and return as response 'welcome'
+
+**Task 1 solution:**
+```js
+app.get("/", (req, res) => {
+
+  const ip = req.ip; 
+  const userAgent = req.get("User-Agent"); 
+  const method = req.method; 
+  const path = req.originalUrl;
+  const Accept = req.get("Accept"); 
+
+  console.log(`************************************`);
+  console.log(`IP: ${ip}`);
+  console.log(`User-Agent: ${userAgent}`);
+  console.log(`Method: ${method}`);
+  console.log(`Path: ${path}`);
+  console.log(`Accept-Content: ${Accept}`);
+  console.log(`************************************`);
+
+  res.status(200).send("Welcome");
+});
+
+```
+## 2. **Key Terms and Definitions**
+
+### URL
+```
+https://example.com/api/users
+```
+A URL (Uniform Resource Locator) consists of the following components:
+
+1. **Protocol**: Defines the communication method (e.g., `http`, `https`).
+   - Example: `https://`
+   
+2. **Domain Name**: Identifies the website (e.g., `example.com`).
+   - Example: `example.com`
+   
+   
+3. **Path**: Refers to the resource's location on the server.
+   - Example: `/api/users`
+
+### Endpoints
+Endpoints are specific paths on the server that are associated with particular HTTP methods (GET, POST, PUT, DELETE, etc.) to perform different actions on the resources.
+
+Another definition:
+An API endpoint is a URL that serves as the point of interaction between an API client and an API server. API clients make requests to these endpoints to access the functionality and data provided by the API.
+
+#### Examples of endpoints:
+
+**GET /api/users**  
+   - Retrieves a list of all users from the server.  
+   - Example URL: `https://example.com/api/users`
+
+**GET /api/users/{id}**  
+   - Retrieves details of a specific user based on their ID.  
+   - Example URL: `https://example.com/api/users/1`
+## 3. **Middleware**
+
+### Problem:  
+We need to know the **User-Agent**, **IP address**, **HTTP method**, **URL**, and **Accept-Type** in all endpoints of the application.
+```js
+app.get('/users', (req, res) => {
+  res.send('Users list');
+});
+
+app.get('/posts', (req, res) => {
+  res.send('Posts list');
+});
+app.get('/products', (req, res) => {
+  res.send('Posts list');
+});
+```
+### Wrong Solution:
+```js
+app.get('/users', (req, res) => {
+  console.log(`User-Agent: ${req.get('User-Agent')}`);
+  console.log(`IP Address: ${req.ip}`);
+  console.log(`Method: ${req.method}`);
+  console.log(`URL: ${req.originalUrl}`);
+  console.log(`Accept-Type: ${req.get("Accept")}`);
+  res.send('Users list');
+});
+
+app.get('/posts', (req, res) => {
+  console.log(`User-Agent: ${req.get('User-Agent')}`);
+  console.log(`IP Address: ${req.ip}`);
+  console.log(`Method: ${req.method}`);
+  console.log(`URL: ${req.originalUrl}`);
+  console.log(`Accept-Type: ${req.get("Accept")}`);
+  res.send('Posts list');
+});
+```
+This solution is incorrect because it repeats the logging code in every route handler.
+
+### What is Middleware?  
+Middleware is software or functions that act as intermediaries between different components of an application. 
+
+In the context of Express, middleware functions handle HTTP requests before they reach route handlers, which allows you to perform common tasks (like logging) for all routes.
+
+
+![images](./Images/05.jpg)
+
+
+### Structure of Middleware in Express:
+Middleware in Express typically has the following structure:
+```js
+const middlewareName = (req, res, next) => {
+  // Your middleware logic here
+  next();  // Pass control to the next middleware or route handler
+};
+// for pass the middlware in all routes 
+app.use(middlewareName())
+```
+
+
+### Solution:
+Instead of repeating the logging code in every route, we can write a middleware function that logs the required details for all incoming requests, no matter the endpoint.
+
+```js
+const express = require('express');
+const app = express();
+
+const logRequestDetails = (req, res, next) => {
+  console.log(`User-Agent: ${req.get('User-Agent')}`);
+  console.log(`IP Address: ${req.ip}`);
+  console.log(`Method: ${req.method}`);
+  console.log(`URL: ${req.originalUrl}`);
+  console.log(`Accept-Type: ${req.get("Accept")}`);
+  next(); 
+};
+
+app.use(logRequestDetails); // Apply this middleware to all routes
+
+// Define routes
+app.get('/users', (req, res) => {
+  res.send('Users list');
+});
+
+app.get('/posts', (req, res) => {
+  res.send('Posts list');
+});
+
+app.listen(3000, () => {
+  console.log('Server running on port 3000');
+});
+```
+
+
+### Task 01:  
+- Write a middleware to log the current date and time for every incoming request. 
+'to get current time 'new Date().toLocaleString()' '
+### Task 01 Solution :  
+```javascript
+
+const logDateTime = (req, res, next) => {
+  const currentDate = new Date().toLocaleString();
+  console.log(`Request received at: ${currentDate}`);
+  next(); 
+};
+
+app.use(logDateTime); 
+
+app.get('/', (req, res) => {
+  res.send('Hello, Middleware with Date and Time!');
+});
+
+
+```
+## 4. **Params vs. Query Strings**
+### **URL Parameters**  
+
+#### **Problematic Code:**
+The following implementation creates a separate route for each user, which is inefficient and hard to maintain.  
+
+```javascript
+let users = [
+  { id: 1, name: "user-1233" },
+  { id: 2, name: "user-1652" },
+  { id: 3, name: "user-1533" },
+  { id: 4, name: "user-1453" },
+];
+
+app.get('/', (req, res) => {
+  res.status(200).send('Test your API!');
+});
+
+app.get("/api/users", (req, res) => {
+  res.status(200).json(users);
+});
+
+app.get("/api/users/1", (req, res) => {
+  res.status(200).json(users[0]);
+});
+
+app.get("/api/users/2", (req, res) => {
+  res.status(200).json(users[1]);
+});
+
+app.get("/api/users/3", (req, res) => {
+  res.status(200).json(users[2]);
+});
+
+app.get("/api/users/4", (req, res) => {
+  res.status(200).json(users[3]);
+});
+```
+
+
+
+**What are Path Parameters?**
+- **Included directly in the URL path** to make routes dynamic.
+- Useful for accessing specific resources.
+- Example: `/api/users/:id`  
+  - URL: `/api/users/123`  
+  - Accessed in code as `req.params.id`.
+
+
+#### **Improved Implementation Using URL Parameters**  
+
+By using URL parameters, we can create a single dynamic route to handle user retrieval.
+
+```javascript
+
+app.get('/', (req, res) => {
+  res.status(200).send('Test your API!');
+});
+
+
+app.get("/api/users", (req, res) => {
+  res.status(200).json(users);
+});
+
+  let users = [
+    { id: 1, name: "user-1233" },
+    { id: 2, name: "user-1652" },
+    { id: 3, name: "user-1533" },
+    { id: 4, name: "user-1453" },
+  ];
+
+app.get("/api/users/:id", (req, res) => {
+  const id = req.params.id; 
+  const user = users[id]
+  if (!user) {
+    return res.status(404).send("User not found");
+  }
+
+  res.status(200).json(user); 
+});
+```
+
+### Query Parameters
+
+![images](./Images/07.jpg)
+
+Query parameters are used to pass additional information to the server and are added to the URL after a `?`.  
+- Example: `/api/users?name=John&age=30`
+- Accessed in code as `req.query`.
+
+Common use cases:
+- Searching
+- Sorting
+
+
+  ```js
+  app.get('/users', (req, res) => {
+  const { name } = req.query; // Extract the 'name' query parameter
+
+  const filteredUsers = users.filter((user) => user.name === name);
+
+  res.status(200).json(filteredUsers);
+  })
+  ```
+### **Task 03**:  
+Create an API endpoint to accept both path parameters and query  and send them as a response as json format.
+
+### **Task 02 Solution**:
+
+Here is the implementation where we combine both path parameters and query strings and send them as a response.
+
+```javascript
+app.get('/api/:id', (req, res) => {
+  const id = req.params.id; // Path parameter
+  const queryParams = req.query; // Query parameters
+
+  res.status(200).json({
+    pathParam: req.params, // Path parameter
+    queryParams: queryParams, // Query parameters
+  });
+});
+```
+## 5. **CRUD Operations**
+
+### CRUD Overview
+CRUD stands for:
+- **Create**: Adding new data (`POST`).
+- **Read**: Retrieving data (`GET`).
+- **Update**: Modifying existing data (`PUT` or `PATCH`).
+- **Delete**: Removing data (`DELETE`).
+
+### Example CRUD Routes
+```javascript
+const express = require('express');
+const app = express();
+
+app.use(express.json()); // Middleware to parse JSON data
+
+let users = [];
+
+// Create
+app.post('/users', (req, res) => {
+  const user = req.body;
+  users.push(user);
+  res.status(201).send(user);
+});
+
+// Read
+app.get('/users', (req, res) => {
+  
+  res.status(200).send(users);
+});
+
+// Update
+app.put('/users/:id', (req, res) => {
+  const { id } = req.params;
+  const updatedUser = req.body;
+  users = users.map(user => (user.id === parseInt(id) ? updatedUser : user));
+  res.send(updatedUser);
+});
+
+// Delete
+app.delete('/users/:id', (req, res) => {
+  const { id } = req.params;
+  users = users.filter(user => user.id !== parseInt(id));
+  res.send(`User with ID ${id} deleted.`);
+});
+
+app.listen(3000, () => {
+  console.log('Server running on port 3000');
+});
+```
+
+**Task**:
+- Build a CRUD API for managing a list of tasks. Each task should have an `id`, `title`, and `isCompleted` status.
+
+```js
+
+
+```
